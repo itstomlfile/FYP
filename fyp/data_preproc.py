@@ -11,7 +11,7 @@ def traffic_preproc():
         if df['local_authority_name'][i] == 'Kirklees':
             traffic_data = traffic_data.append({'local_authority_name': df['local_authority_name'][i], 'count_date' : df['count_date'][i], 'all_motor_vehicles': df['all_motor_vehicles'][i]}, ignore_index=True)
     traffic_data['count_date'] = pd.to_datetime(traffic_data['count_date'])
-    traffic_data.to_csv(r'Kirklees_Year_Only_CSV.csv', index=False)
+    traffic_data.to_csv(r'data/Kirklees_Traffic_csv.csv', index=False)
 
 
 def emissions_preproc():
@@ -22,7 +22,7 @@ def emissions_preproc():
         sheet_df['Start time'] = pd.to_datetime(sheet_df['Start time'])
         frames.append(sheet_df)
     emissions_data = pd.concat(frames, ignore_index=True)
-    emissions_data.to_csv(r'data/emissions_csv.csv')
+    emissions_data.to_csv(r'data/emissions_csv.csv', index=False)
 
 
 def sheet_reader(sheet_name, xls):
