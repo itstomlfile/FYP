@@ -35,34 +35,56 @@ def main():
     predictions = model.predict(x_test)
     predictions = scaler.inverse_transform(predictions)
 
-    #Get the root mean squared error (RMSE)
+    # Get the root mean squared error (RMSE)
     rmse=np.sqrt(np.mean(((predictions- y_test)**2)))
     print(rmse)
 
-    #Plot the data
-    train = data[:training_data_len]
-    valid = data[training_data_len:]
-    valid['Predictions'] = predictions
-    #Visualize the data
-    plt.figure(figsize=(16,8))
-    plt.title('Model')
-    plt.xlabel('Year', fontsize=18)
-    plt.ylabel('Number of Vehicles', fontsize=18)
-    plt.plot(train['all_motor_vehicles'])
-    plt.plot(valid[['all_motor_vehicles', 'Predictions']])
-    plt.legend(['Train', 'Val', 'Predictions'], loc='lower right')
-    plt.show()
+    plot_traffic(df, predictions)
 
 
 def traffic_preproc():
     traffic_data = pd.read_csv('data/Kirklees_csv.csv',
-                               usecols=['local_authority_name', 'count_date', 'all_motor_vehicles'])
-    traffic_data['count_date'] = pd.to_datetime(traffic_data['count_date'])
+                               usecols=['local_authority_name', 'count_date', 'all_motor_vehicles'],
+                               parse_dates=['count_date'])
     return traffic_data
 
 
+def plot_traffic(df, predictions):
+    # Plot the data
+    train = data[:training_data_len]
+    valid = data[training_data_len:]
+    valid['Predictions'] = predictions
+    plt.figure(figsize=(16,8), dpi=128)
+    plt.title('Traffic 2001-2005')
+    plt.xlabel('Year', fontsize=18)
+    plt.ylabel('Number of Vehicles', fontsize=18)
+    plt.plot(train['all_motor_vehicles'])
+    plt.plot(valid[['all_motor_vehicles', 'Predictions']])
+    plt.legend(['Training Data', 'Actual', 'Predictions'])
+    # TODO: Get the x-axis to use the timestamps
+    plt.show()
+    print(df.values)
+
+
+def build_traffic_model():
+    # Build the LSTM model
+    model = Sequential()
+    model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
+    model.add(LSTM(50, return_sequences=False))
+    model.add(Dense(25))
+    model.add(Dense(1))
+
+    # Compile the model
+    model.compile(optimizer='adam', loss='mean_squared_error')
+
+    # Train the model
+    model.fit(x_train, y_train, batch_size=1, epochs=5)
+    model.save("data/traffic_model.hd5")
+    return model
+
+
+# PREP DATA
 df = traffic_preproc()
-# plot_traffic(df)
 
 # Separate vehicle column
 data = df.filter(['all_motor_vehicles'])
@@ -95,33 +117,5 @@ x_train, y_train = np.array(x_train), np.array(y_train)
 x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
 
-def plot_traffic(df):
-    # Visualize the closing price history
-    plt.figure(figsize=(20, 10))
-    plt.title('Traffic History')
-    df.plot(x='count_date', y='all_motor_vehicles')
-    plt.xlabel('Year', fontsize=18)
-    plt.ylabel('Number of Vehicles', fontsize=18)
-    plt.show()
-
-
-def build_traffic_model():
-    # Build the LSTM model
-    model = Sequential()
-    model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
-    model.add(LSTM(50, return_sequences=False))
-    model.add(Dense(25))
-    model.add(Dense(1))
-
-    # Compile the model
-    model.compile(optimizer='adam', loss='mean_squared_error')
-
-    # Train the model
-    model.fit(x_train, y_train, batch_size=1, epochs=5)
-    model.save("traffic_model.hd5")
-    return model
-
-
 if __name__ == '__main__':
-    #plt.style.use('fivethirtyeight')
     main()
