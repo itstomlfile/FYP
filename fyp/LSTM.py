@@ -63,7 +63,7 @@ def plot_traffic(df, predictions):
     plt.legend(['Training Data', 'Actual', 'Predictions'])
     # TODO: Get the x-axis to use the timestamps
     plt.show()
-    print(df.values)
+    plt.savefig('graphs/traffic_LSTM_predictions.png')
 
 
 def build_traffic_model():
