@@ -8,38 +8,71 @@ import matplotlib.pyplot as plt
 
 
 def main():
+    # PREP DATA
+    traffic_df = traffic_preproc()
+
+    # Separate vehicle column
+    traffic_data = traffic_df.filter(['all_motor_vehicles'])
+
+    # Convert the traffic_df to a numpy array
+    traffic_dataset = traffic_data.values
+
+    # Get the number of rows to train the model on (80%)
+    traffic_training_data_len = math.ceil(len(traffic_dataset) * .8)
+
+    # Scale the traffic_data
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    traffic_scaled_data = scaler.fit_transform(traffic_dataset)  # Scaled values between 0 and 1
+
+    # Create scaled training traffic_data set
+    traffic_train_data = traffic_scaled_data[0:traffic_training_data_len, :]
+
+    # Split the traffic_data
+    traffic_x_train = []
+    traffic_y_train = []
+
+    for i in range(60, len(traffic_train_data)):
+        traffic_x_train.append(traffic_train_data[i - 60:i, 0])
+        traffic_y_train.append(traffic_train_data[i, 0])
+
+    # Convert the traffic_x_train and traffic_y_train to numpy arrays
+    traffic_x_train, traffic_y_train = np.array(traffic_x_train), np.array(traffic_y_train)
+
+    # Reshape the traffic_data
+    traffic_x_train = np.reshape(traffic_x_train, (traffic_x_train.shape[0], traffic_x_train.shape[1], 1))
+
     try:
-        f = open("data/traffic_model.hd5")
+        f_traffic = open("data/traffic_model.hd5")
         model = load_model("data/traffic_model.hd5")
         print("Loading existing model...")
     except IOError:
         print("No existing model found. Building new model...")
 
-        model = build_traffic_model()
+        model = build_model(traffic_x_train, traffic_y_train, "data/traffic_model.hd5")
     finally:
-        f.close()
-    # Create the testing data set
-    test_data = scaled_data[training_data_len - 60:, :]
-    # Create the data sets x_test and y_test
-    x_test = []
-    y_test = dataset[training_data_len:, :]
+        f_traffic.close()
+    # Create the testing traffic_data set
+    traffic_test_data = traffic_scaled_data[traffic_training_data_len - 60:, :]
+    # Create the traffic_data sets traffic_x_test and traffic_y_test
+    traffic_x_test = []
+    traffic_y_test = traffic_dataset[traffic_training_data_len:, :]
 
-    for i in range(60, len(test_data)):
-        x_test.append(test_data[i - 60:i, 0])
+    for i in range(60, len(traffic_test_data)):
+        traffic_x_test.append(traffic_test_data[i - 60:i, 0])
 
-    # Convert the data to a numpy array
-    x_test = np.array(x_test)
+    # Convert the traffic_data to a numpy array
+    traffic_x_test = np.array(traffic_x_test)
 
-    # Reshape the data
-    x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
-    predictions = model.predict(x_test)
-    predictions = scaler.inverse_transform(predictions)
+    # Reshape the traffic_data
+    traffic_x_test = np.reshape(traffic_x_test, (traffic_x_test.shape[0], traffic_x_test.shape[1], 1))
+    traffic_predictions = model.predict(traffic_x_test)
+    traffic_predictions = scaler.inverse_transform(traffic_predictions)
 
     # Get the root mean squared error (RMSE)
-    rmse=np.sqrt(np.mean(((predictions- y_test)**2)))
+    rmse = np.sqrt(np.mean(((traffic_predictions - traffic_y_test)**2)))
     print(rmse)
 
-    plot_traffic(df, predictions)
+    plot_traffic(traffic_predictions, traffic_data, traffic_training_data_len)
 
 
 def traffic_preproc():
@@ -49,7 +82,7 @@ def traffic_preproc():
     return traffic_data
 
 
-def plot_traffic(df, predictions):
+def plot_traffic(predictions, data, training_data_len):
     # Plot the data
     train = data[:training_data_len]
     valid = data[training_data_len:]
@@ -66,7 +99,7 @@ def plot_traffic(df, predictions):
     plt.savefig('graphs/traffic_LSTM_predictions.png')
 
 
-def build_traffic_model():
+def build_model(x_train, y_train, name):
     # Build the LSTM model
     model = Sequential()
     model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
@@ -79,42 +112,8 @@ def build_traffic_model():
 
     # Train the model
     model.fit(x_train, y_train, batch_size=1, epochs=5)
-    model.save("data/traffic_model.hd5")
+    model.save(name)
     return model
-
-
-# PREP DATA
-df = traffic_preproc()
-
-# Separate vehicle column
-data = df.filter(['all_motor_vehicles'])
-
-# Convert the df to a numpy array
-dataset = data.values
-
-# Get the number of rows to train the model on (80%)
-training_data_len = math.ceil(len(dataset) * .8)
-
-# Scale the data
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(dataset)  # Scaled values between 0 and 1
-
-# Create scaled training data set
-train_data = scaled_data[0:training_data_len, :]
-
-# Split the data
-x_train = []
-y_train = []
-
-for i in range(60, len(train_data)):
-    x_train.append(train_data[i - 60:i, 0])
-    y_train.append(train_data[i, 0])
-
-# Convert the x_train and y_train to numpy arrays
-x_train, y_train = np.array(x_train), np.array(y_train)
-
-# Reshape the data
-x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
 
 if __name__ == '__main__':
