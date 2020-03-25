@@ -66,7 +66,7 @@ def lstm_prep_and_predict(df, model_path, dependent):
 
     # Get the root mean squared error (RMSE)
     rmse=np.sqrt(np.mean(((predictions - y_test)**2)))
-    print(rmse)
+    print("The Root Mean Squared Error(RMSE) is: " + str(rmse))
 
     return df, predictions, training_data_len
 
@@ -87,9 +87,8 @@ def emissions_preproc():
     return emissions_data
 
 
-def plot_graph(predictions, data, training_data_len, title, x_label, y_label, dependant, fig):
+def plot_graph(predictions, data, training_data_len, title, x_label, y_label, dependent, fig, ind):
     # Plot the data
-    data.index = pd.to_datetime(data.index)
     train = data[:training_data_len]
     valid = data[training_data_len:]
     valid['Predictions'] = predictions
@@ -97,11 +96,11 @@ def plot_graph(predictions, data, training_data_len, title, x_label, y_label, de
     plt.title(title)
     plt.xlabel(x_label, fontsize=18)
     plt.ylabel(y_label, fontsize=18)
-    plt.plot(train[dependant])
-    plt.plot(valid[[dependant, 'Predictions']])
-
+    plt.plot(train[dependent])
+    plt.plot(valid[[dependent, 'Predictions']])
+    # plt.plot(pd.to_datetime(train[ind]), train[dependent])
+    # plt.plot(pd.to_datetime(valid[ind]), valid[[dependent, 'Predictions']])
     plt.legend(['Training Data', 'Actual', 'Predictions'])
-    # TODO: Get the x-axis to use the timestamps
     plt.show()
     plt.savefig(fig)
 
@@ -125,12 +124,10 @@ def build_model(x_train, y_train, name):
 
 if __name__ == '__main__':
     # PREP DATA
-    #traffic_df = traffic_preproc()
-    #df, predictions, training_data_len = lstm_prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_motor_vehicles')
-    #plot_graph(predictions, df, training_data_len, 'Traffic 2001-2005', 'Date', 'NO2', 'all_motor_vehicles')
+    traffic_df = traffic_preproc()
+    df, predictions, training_data_len = lstm_prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_motor_vehicles')
+    plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2001-2005', 'Data points', 'Number of Vehicles', 'all_motor_vehicles' , "graphs/traffic_LSTM_predictions.png", 'count_date')
 
     emissions_df = emissions_preproc()
-
     df, predictions, training_data_len = lstm_prep_and_predict(emissions_df, "data/emissions_model.hd5", 'NO2')
-    plot_graph(predictions, df, training_data_len, 'Emissions 2007-2012 ', 'Date', 'NO2', 'NO2', 'graphs/emissions_LSTM_predictions.png')
-
+    plot_graph(predictions, df, training_data_len, 'LSTM Kirklees Emissions 2007-2011 ', 'Data points', 'NO2 (µ/m3)', 'NO2', 'graphs/emissions_LSTM_predictions.png', 'Start time')

@@ -19,7 +19,7 @@ def emissions_preproc():
     xls = pd.ExcelFile('data/emissions.xlsx')
     for i in range(2007, 2012):
         sheet_df = sheet_reader(str(i), xls)
-        sheet_df['Start time'] = pd.to_datetime(sheet_df['Start time'])
+        #sheet_df['Start time'] = pd.to_datetime(sheet_df['Start time'])
         frames.append(sheet_df)
     emissions_data = pd.concat(frames, ignore_index=True)
     emissions_data.to_csv(r'data/emissions_csv.csv', index=False)
@@ -46,6 +46,6 @@ def display_data():
 
 
 if __name__ == '__main__':
-    # emissions_preproc()
+    emissions_preproc()
     # traffic_preproc()
     display_data()
