@@ -130,8 +130,8 @@ if __name__ == '__main__':
     # PREP DATA
     traffic_df = traffic_preproc()
     df, predictions, training_data_len = prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_motor_vehicles')
-    plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2001-2005', 'Data points', 'Number of Vehicles', 'all_motor_vehicles' , "graphs/traffic_LSTM_predictions.png", 'count_date')
+    plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2001-2005', 'Year', 'Number of Vehicles', 'all_motor_vehicles' , "graphs/traffic_LSTM_predictions.png", 'count_date')
 
     emissions_df = emissions_preproc()
     df, predictions, training_data_len = prep_and_predict(emissions_df, "data/emissions_model.hd5", 'NO2')
-    plot_graph(predictions, df, training_data_len, 'LSTM Kirklees Emissions 2007-2011 ', 'Data points', 'NO2 (µ/m3)', 'NO2', 'graphs/emissions_LSTM_predictions.png', 'Start time')
+    plot_graph(predictions, df, training_data_len, 'LSTM Kirklees Emissions 2007-2011 ', 'Year', 'NO2 (µ/m3)', 'NO2', 'graphs/emissions_LSTM_predictions.png', 'Start time')
