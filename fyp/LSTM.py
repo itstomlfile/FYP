@@ -7,7 +7,7 @@ from keras.layers import Dense, LSTM
 import matplotlib.pyplot as plt
 
 
-def lstm_prep_and_predict(df, model_path, dependent):
+def prep_and_predict(df, model_path, dependent):
     # Separate vehicle column
     data = df.filter([dependent])
 
@@ -72,19 +72,23 @@ def lstm_prep_and_predict(df, model_path, dependent):
 
 
 def traffic_preproc():
-    traffic_data = pd.read_csv('data/Kirklees_csv.csv',
-                               usecols=['local_authority_name', 'count_date', 'all_motor_vehicles'],
-                               parse_dates=['count_date'])
+    traffic_data = pd.read_csv('data/Kirklees_Traffic_csv.csv',
+                               usecols=['count_date', 'all_motor_vehicles'],
+                               index_col=['count_date'], parse_dates=['count_date'], date_parser=date_parser)
     return traffic_data
 
 
 def emissions_preproc():
-    emissions_data = pd.read_csv('data/emissions_csv.csv',
-                               usecols=['Start time', 'NO2'])
+    emissions_data = pd.read_csv('data/emissions_csv.csv', usecols=['Start time', 'NO2'], index_col=['Start time'],
+                                 parse_dates=['Start time'], date_parser=date_parser)
     # Remove empty fields to stop skewing learning
     emissions_data['NO2'].replace('',np.nan, inplace=True)
     emissions_data.dropna(subset=['NO2'], inplace=True)
     return emissions_data
+
+
+def date_parser(x):
+    return pd.datetime.strptime(x, '%d/%m/%Y')
 
 
 def plot_graph(predictions, data, training_data_len, title, x_label, y_label, dependent, fig, ind):
@@ -105,7 +109,7 @@ def plot_graph(predictions, data, training_data_len, title, x_label, y_label, de
     plt.savefig(fig)
 
 
-def build_model(x_train, y_train, name): 
+def build_model(x_train, y_train, name):
     # Build the LSTM model
     model = Sequential()
     model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
@@ -125,9 +129,9 @@ def build_model(x_train, y_train, name):
 if __name__ == '__main__':
     # PREP DATA
     traffic_df = traffic_preproc()
-    df, predictions, training_data_len = lstm_prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_motor_vehicles')
+    df, predictions, training_data_len = prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_motor_vehicles')
     plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2001-2005', 'Data points', 'Number of Vehicles', 'all_motor_vehicles' , "graphs/traffic_LSTM_predictions.png", 'count_date')
 
     emissions_df = emissions_preproc()
-    df, predictions, training_data_len = lstm_prep_and_predict(emissions_df, "data/emissions_model.hd5", 'NO2')
+    df, predictions, training_data_len = prep_and_predict(emissions_df, "data/emissions_model.hd5", 'NO2')
     plot_graph(predictions, df, training_data_len, 'LSTM Kirklees Emissions 2007-2011 ', 'Data points', 'NO2 (µ/m3)', 'NO2', 'graphs/emissions_LSTM_predictions.png', 'Start time')
