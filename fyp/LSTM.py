@@ -12,7 +12,6 @@ def prep_and_predict(df, model_path, dependent):
     data = df.filter([dependent])
 
     # Convert the df to a numpy array
-    # df['Start time'] = pd.to_datetime(df['Start time'])
     dataset = data.values
 
     # Get the number of rows to train the model on (80%)
@@ -73,7 +72,7 @@ def prep_and_predict(df, model_path, dependent):
 
 def traffic_preproc():
     traffic_data = pd.read_csv('data/Kirklees_Traffic_csv.csv',
-                               usecols=['count_date', 'all_motor_vehicles'],
+                               usecols=['count_date', 'all_vehicles'],
                                index_col=['count_date'], parse_dates=['count_date'], date_parser=date_parser)
     return traffic_data
 
@@ -91,7 +90,7 @@ def date_parser(x):
     return pd.datetime.strptime(x, '%d/%m/%Y')
 
 
-def plot_graph(predictions, data, training_data_len, title, x_label, y_label, dependent, fig, ind):
+def plot_graph(predictions, data, training_data_len, title, x_label, y_label, dependent, fig):
     # Plot the data
     train = data[:training_data_len]
     valid = data[training_data_len:]
@@ -129,8 +128,8 @@ def build_model(x_train, y_train, name):
 if __name__ == '__main__':
     # PREP DATA
     traffic_df = traffic_preproc()
-    df, predictions, training_data_len = prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_motor_vehicles')
-    plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2001-2005', 'Year', 'Number of Vehicles', 'all_motor_vehicles' , "graphs/traffic_LSTM_predictions.png", 'count_date')
+    df, predictions, training_data_len = prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_vehicles')
+    plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2001-2005', 'Year', 'Number of Vehicles', 'all_vehicles' , "graphs/traffic_LSTM_predictions.png", 'count_date')
 
     emissions_df = emissions_preproc()
     df, predictions, training_data_len = prep_and_predict(emissions_df, "data/emissions_model.hd5", 'NO2')
