@@ -6,9 +6,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
 
 
-def prep_and_predict(df, model_path, dependent):
+def prep_and_predict(df, dependent):
     data = df.filter([dependent])
 
     # Convert the df to a numpy array
@@ -20,14 +21,9 @@ def prep_and_predict(df, model_path, dependent):
     # Scale the data
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(dataset)  # Scaled values between 0 and 1
-    print(scaled_data.shape)
-    # build the model
-    model = sm.tsa.statespace.SARIMAX(scaled_data,
-                                    order=(1, 1, 1),
-                                    seasonal_order=(1, 0, 1, 12),
-                                    enforce_stationarity=False,
-                                    enforce_invertibility=False)
 
+    # build the model with best set of hyper-parameters
+    model = sm.tsa.statespace.SARIMAX(scaled_data, order=(1, 1, 2), seasonal_order=(1, 0, 2, 12))
     results = model.fit()
 
     # Predicting the last year
@@ -40,19 +36,38 @@ def prep_and_predict(df, model_path, dependent):
     df_predicted = df_predicted.reshape(-1, 1)
     df_predicted = scaler.inverse_transform(df_predicted)
 
+    # Actual testing data to compare against
+    actual = df[training_data_len:]
+    actual = actual.values.reshape(-1, 1)
 
+    index = 0
+    for x in df_predicted:
+        if x < 0:
+            # Replace negative elements with previous value
+            actual[index] = actual[index - 1]
+            df_predicted[index] = df_predicted[index - 1]
+        index = index + 1
+    # Compute the mean square error
+    mse = mean_squared_error(actual, df_predicted, squared=False)
+    print('The Mean Squared Error: {}'.format(round(mse, 2)))
+
+    return df, df_predicted, training_data_len
+
+
+def plot_graph(predictions, data, training_data_len, title, x_label, y_label, dependent, fig):
     # Plot the data
-    train = df[:training_data_len]
-    valid = df[training_data_len:]
-    valid['Predictions'] = df_predicted
-    plt.figure(figsize=(16, 8), dpi=256)
-    plt.title(" ")
-    plt.xlabel("Year", fontsize=18)
-    plt.ylabel("Count", fontsize=18)
+    train = data[:training_data_len]
+    valid = data[training_data_len:]
+    valid['predictions'] = predictions
+    plt.figure(figsize=(16,8), dpi=256)
+    plt.title(title)
+    plt.xlabel(x_label, fontsize=18)
+    plt.ylabel(y_label, fontsize=18)
     plt.plot(train[dependent])
-    plt.plot(valid[[dependent, 'Predictions']])
+    plt.plot(valid[[dependent, 'predictions']])
     plt.legend(['Training Data', 'Actual', 'Predictions'])
     plt.show()
+    plt.savefig(fig)
 
 
 def traffic_preproc():
@@ -62,13 +77,22 @@ def traffic_preproc():
     return traffic_data
 
 
+def emissions_preproc():
+    emissions_data = pd.read_csv('data/emissions_csv.csv', usecols=['Start time', 'NO2'], index_col=['Start time'],
+                                 parse_dates=['Start time'], date_parser=date_parser)
+    # Remove empty fields to stop skewing learning
+    emissions_data['NO2'].replace('',np.nan, inplace=True)
+    emissions_data.dropna(subset=['NO2'], inplace=True)
+    return emissions_data
+
+
 def date_parser(x):
     return pd.datetime.strptime(x, '%d/%m/%Y')
 
 
-def FindModelParams(df):
+def define_model_parameters(df):
     warnings.filterwarnings("ignore")  # specify to ignore warning messages
-    # The term bfill means that we use the value before filling in missing values - not used here but can be will realworld data
+    # Any empty data will be replaced with the previous value
     df = df.fillna(df.bfill())
     dataset = df['all_vehicles']
 
@@ -117,6 +141,13 @@ def FindModelParams(df):
 
 if __name__ == '__main__':
     # PREP DATA
-    traffic = traffic_preproc()
-    FindModelParams(traffic)
-    #prep_and_predict(traffic, "", 'all_vehicles')
+    traffic_df = traffic_preproc()
+    df, predictions, training_data_len = prep_and_predict(traffic_df, 'all_vehicles')
+    plot_graph(predictions, df, training_data_len, 'ARIMA_Traffic_2000-2005', 'Year', 'Number of Vehicles', 'all_vehicles' , "graphs/traffic_ARIMA_predictions.png")
+    emissions_df = emissions_preproc()
+
+    df, predictions, training_data_len = prep_and_predict(emissions_df, 'NO2')
+    plot_graph(predictions, df, training_data_len, 'ARIMA_Emissions_2007-2011', 'Year', 'NO2 (µ/m3)', 'NO2',
+               'graphs/emissions_ARIMA_predictions.png')
+
+    # FindModelParams(traffic_df)

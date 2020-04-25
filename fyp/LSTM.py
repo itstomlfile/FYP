@@ -2,6 +2,7 @@ import math
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
 from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM
 import matplotlib.pyplot as plt
@@ -63,10 +64,11 @@ def prep_and_predict(df, model_path, dependent):
     predictions = model.predict(x_test)
     predictions = scaler.inverse_transform(predictions)
 
-    # Get the root mean squared error (RMSE)
-    rmse=np.sqrt(np.mean(((predictions - y_test)**2)))
-    print("The Root Mean Squared Error(RMSE) is: " + str(rmse))
-
+    # Compute the mean square error
+    mse = ((predictions - y_test) ** 2).mean()
+    # Compute the mean square error
+    mse = mean_squared_error(y_test, predictions, squared=False)
+    print('The Mean Squared Error: {}'.format(round(mse, 2)))
     return df, predictions, training_data_len
 
 
@@ -101,8 +103,6 @@ def plot_graph(predictions, data, training_data_len, title, x_label, y_label, de
     plt.ylabel(y_label, fontsize=18)
     plt.plot(train[dependent])
     plt.plot(valid[[dependent, 'Predictions']])
-    # plt.plot(pd.to_datetime(train[ind]), train[dependent])
-    # plt.plot(pd.to_datetime(valid[ind]), valid[[dependent, 'Predictions']])
     plt.legend(['Training Data', 'Actual', 'Predictions'])
     plt.show()
     plt.savefig(fig)
@@ -129,8 +129,8 @@ if __name__ == '__main__':
     # PREP DATA
     traffic_df = traffic_preproc()
     df, predictions, training_data_len = prep_and_predict(traffic_df, "data/traffic_model.hd5", 'all_vehicles')
-    plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2001-2005', 'Year', 'Number of Vehicles', 'all_vehicles' , "graphs/traffic_LSTM_predictions.png", 'count_date')
+    plot_graph(predictions, df, training_data_len, 'LSTM Traffic 2000-2005', 'Year', 'Number of Vehicles', 'all_vehicles' , "graphs/traffic_LSTM_predictions.png")
 
     emissions_df = emissions_preproc()
     df, predictions, training_data_len = prep_and_predict(emissions_df, "data/emissions_model.hd5", 'NO2')
-    plot_graph(predictions, df, training_data_len, 'LSTM Kirklees Emissions 2007-2011 ', 'Year', 'NO2 (µ/m3)', 'NO2', 'graphs/emissions_LSTM_predictions.png', 'Start time')
+    plot_graph(predictions, df, training_data_len, 'LSTM Kirklees Emissions 2007-2011 ', 'Year', 'NO2 (µ/m3)', 'NO2', 'graphs/emissions_LSTM_predictions.png')
