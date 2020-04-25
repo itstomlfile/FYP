@@ -25,7 +25,7 @@ def prep_and_predict(df, model_path, dependent):
     # Create scaled training data set
     train_data = scaled_data[0:training_data_len, :]
 
-    # Split the data
+    # Split the data into samples and sub samples
     x_train = []
     y_train = []
 
@@ -36,7 +36,7 @@ def prep_and_predict(df, model_path, dependent):
     # Convert the x_train and y_train to numpy arrays
     x_train, y_train = np.array(x_train), np.array(y_train)
 
-    # Reshape the data
+    # Reshape the data to be 3d as per LSTM input
     x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
     try:

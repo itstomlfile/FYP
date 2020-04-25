@@ -22,8 +22,13 @@ def prep_and_predict(df, dependent):
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaled_data = scaler.fit_transform(dataset)  # Scaled values between 0 and 1
 
-    # build the model with best set of hyper-parameters
-    model = sm.tsa.statespace.SARIMAX(scaled_data, order=(1, 1, 2), seasonal_order=(1, 0, 2, 12))
+    # build the model with best set of hyper-parameters for the given data
+    if dependent == "all_vehicles":
+        model = sm.tsa.statespace.SARIMAX(scaled_data, order=(1, 1, 2), seasonal_order=(1, 0, 2, 12),
+                                            enforce_stationarity=False, enforce_invertibility=False)
+    else:
+        model = sm.tsa.statespace.SARIMAX(scaled_data, order=(1, 0, 1), seasonal_order=(1, 1, 1, 12),
+                                            enforce_stationarity=False, enforce_invertibility=False)
     results = model.fit()
 
     # Predicting the last year
@@ -48,8 +53,8 @@ def prep_and_predict(df, dependent):
             df_predicted[index] = df_predicted[index - 1]
         index = index + 1
     # Compute the mean square error
-    mse = mean_squared_error(actual, df_predicted, squared=False)
-    print('The Mean Squared Error: {}'.format(round(mse, 2)))
+    rmse = mean_squared_error(actual, df_predicted, squared=False)
+    print('The Root Mean Squared Error: {}'.format(round(rmse, 2)))
 
     return df, df_predicted, training_data_len
 
@@ -90,11 +95,13 @@ def date_parser(x):
     return pd.datetime.strptime(x, '%d/%m/%Y')
 
 
-def define_model_parameters(df):
+def define_model_parameters(df, key):
+    # Code inspired by: https://www.digitalocean.com/community/tutorials/a-guide-to-time-series-forecasting-with-arima-in-python-3
+    # Accessed: 20/04/2020
     warnings.filterwarnings("ignore")  # specify to ignore warning messages
     # Any empty data will be replaced with the previous value
     df = df.fillna(df.bfill())
-    dataset = df['all_vehicles']
+    dataset = df[key]
 
     # Most commonly used time-series forecasting is ARIMA (Autoregressive Integrated Moving Average)
     # Seasonal ARIMA is denoted as ARIMA(p,d,q)(P,D,Q)s accounting for seasonality, trend, and noise in data.
@@ -112,7 +119,7 @@ def define_model_parameters(df):
     # Create parameter combinations for Seasonal ARIMA
     # Find the values of ARIMA(p,d,q)(P,D,Q)s that optimise a metric of interest.
     # Automate the process of identifying the optimal set of parameters for the seasonal ARIMA time series model.
-    p = d = q = range(0, 3)
+    p = d = q = range(0, 2)
     pdq = list(itertools.product(p, d, q))
     seasonal_pdq = [(x[0], x[1], x[2], 12) for x in list(itertools.product(p, d, q))]
 
@@ -143,11 +150,11 @@ if __name__ == '__main__':
     # PREP DATA
     traffic_df = traffic_preproc()
     df, predictions, training_data_len = prep_and_predict(traffic_df, 'all_vehicles')
-    plot_graph(predictions, df, training_data_len, 'ARIMA_Traffic_2000-2005', 'Year', 'Number of Vehicles', 'all_vehicles' , "graphs/traffic_ARIMA_predictions.png")
+    plot_graph(predictions, df, training_data_len, 'ARIMA_Traffic_2000-2006', 'Year', 'Number of Vehicles', 'all_vehicles' , "graphs/traffic_ARIMA_predictions.png")
     emissions_df = emissions_preproc()
 
     df, predictions, training_data_len = prep_and_predict(emissions_df, 'NO2')
-    plot_graph(predictions, df, training_data_len, 'ARIMA_Emissions_2007-2011', 'Year', 'NO2 (µ/m3)', 'NO2',
+    plot_graph(predictions, df, training_data_len, 'ARIMA_Emissions_2007-2012', 'Year', 'NO2 (µ/m3)', 'NO2',
                'graphs/emissions_ARIMA_predictions.png')
 
-    # FindModelParams(traffic_df)
+    # define_model_parameters(emissions_df, 'NO2')
