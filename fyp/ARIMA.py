@@ -27,9 +27,9 @@ def prep_and_predict(df, dependent):
         model = sm.tsa.statespace.SARIMAX(scaled_data, order=(1, 1, 2), seasonal_order=(1, 0, 2, 12),
                                             enforce_stationarity=False, enforce_invertibility=False)
     else:
-        model = sm.tsa.statespace.SARIMAX(scaled_data, order=(1, 0, 1), seasonal_order=(1, 1, 1, 12),
+        model = sm.tsa.statespace.SARIMAX(scaled_data, order=(1, 1, 2), seasonal_order=(2, 0, 2, 12),
                                             enforce_stationarity=False, enforce_invertibility=False)
-    results = model.fit()
+    results = model.fit(disp=0)
 
     # Predicting the last year
     predictions = results.get_prediction(start=training_data_len, dynamic=False)
