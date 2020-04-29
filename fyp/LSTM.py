@@ -65,10 +65,9 @@ def prep_and_predict(df, model_path, dependent):
     predictions = scaler.inverse_transform(predictions)
 
     # Compute the mean square error
-    mse = ((predictions - y_test) ** 2).mean()
-    # Compute the mean square error
-    mse = mean_squared_error(y_test, predictions, squared=False)
-    print('The Mean Squared Error: {}'.format(round(mse, 2)))
+    rmse = mean_squared_error(y_test, predictions, squared=False)
+    print('The Root Mean Squared Error: {}'.format(round(rmse, 2)))
+
     return df, predictions, training_data_len
 
 
@@ -111,8 +110,8 @@ def plot_graph(predictions, data, training_data_len, title, x_label, y_label, de
 def build_model(x_train, y_train, name):
     # Build the LSTM model
     model = Sequential()
-    model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
-    model.add(LSTM(50, return_sequences=False))
+    model.add(LSTM(60, return_sequences=True, input_shape=(x_train.shape[1], 1)))
+    model.add(LSTM(60, return_sequences=False))
     model.add(Dense(25))
     model.add(Dense(1))
 
@@ -120,7 +119,7 @@ def build_model(x_train, y_train, name):
     model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
 
     # Train the model
-    model.fit(x_train, y_train, batch_size=128, epochs=10)
+    model.fit(x_train, y_train, batch_size=60, epochs=10)
     model.save(name)
     return model
 
